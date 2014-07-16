@@ -1,0 +1,1 @@
+Devices' status will be represented as .in or .out files here. Although their status is persisted within the pickle files, this might be useful if you want another shell script to know who's in and who's out.
