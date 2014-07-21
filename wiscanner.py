@@ -26,12 +26,14 @@ class Device:
 	devicesInHouse = set()
 
 	# ======================================================
-	def __init__(self, macAddress, name, thresholdSeconds):
+	def __init__(self, macAddress, name, thresholdSeconds, notifyTwitter, notifyPushover):
 		self.inHouse = None
 		self.lastJoinTime = self.lastLeaveTime = self.lastVisibleTime = datetime.now()
 		self.macAddress = macAddress
 		self.name = name
 		self.thresholdSeconds = thresholdSeconds
+		self.notifyTwitter = notifyTwitter
+		self.notifyPushover = notifyPushover
 		self.visible = False
 		Device.allDevices.add(self)
 			  
@@ -146,11 +148,12 @@ class Device:
 		print(text)
 
 	# ======================================================
-	@staticmethod
-	def __sendMessage(text):
+	def __sendMessage(self, text):
 		Device.__sendToConsole(text)
-		Device.__sendToTwitter(text)
-		#Device.__sendToPushover(text)
+		if (self.notifyTwitter):
+			Device.__sendToTwitter(text)
+		if (self.notifyPushover):
+			Device.__sendToPushover(text)
 
 	# ======================================================
 	@staticmethod
@@ -217,7 +220,7 @@ if __name__ == '__main__':
 
 	for section in config.sections():
 		if (section[:7] == 'Device_'):
-			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']))
+			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']), config[section].getboolean('Twitter'), config[section].getboolean('Pushover'))
 	
 	while True:
 		nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
