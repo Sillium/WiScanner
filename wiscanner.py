@@ -128,9 +128,10 @@ class Device:
 	@staticmethod
 	def __sendToTwitter(text):
 		try:
+			log.info('Sending message to Twitter.')
 			twitter = Twython(TWITTER_APP_KEY, TWITTER_APP_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_TOKEN_SECRET)
 			twitter.update_status(status=text)
-			log.debug('Sent message to Twitter.')
+			log.info('Sent message to Twitter.')
 		except:
 			log.error('Twitter exception!')
 
@@ -138,6 +139,7 @@ class Device:
 	@staticmethod
 	def __sendToPushover(text):
 		try:
+			log.info('Sending message to Pushover.')
 			po = Pushover(PUSHOVER_TOKEN)
 			po.user(PUSHOVER_USER)
 			msg = po.msg(text)
