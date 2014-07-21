@@ -274,11 +274,9 @@ if __name__ == '__main__':
 
 		log.debug(Device.joinStrings(Device.allDevices))
 
-		try:
-			os.utime('lastrun', None)
-		except:
-			open('lastrun', 'a').close()
-
+		lastRunFile = open('last.run', 'w')
+		lastRunFile.write(Device.joinStrings(Device.allDevices))
+		lastRunFile.close()
 		
 		log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
 		time.sleep(INTERVAL)
