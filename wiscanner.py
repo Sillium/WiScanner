@@ -233,14 +233,13 @@ if __name__ == '__main__':
 	log = logging.getLogger(__name__)
 	log.setLevel(numericLogLevel)
 
+	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
 	handler = logging.handlers.TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=1)
 	handler.setLevel(numericLogLevel)
-
-	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 	handler.setFormatter(formatter)
-
 	log.addHandler(handler)
-	
+
 	log.info('Starting up...')
 	
 	# iterate over configured devices in config file
@@ -249,34 +248,37 @@ if __name__ == '__main__':
 			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']), config[section].getboolean('Twitter'), config[section].getboolean('Pushover'))
 			log.info('Device configured: {0}'.format(newDevice.name))
 	
-	try:
-		while True:
-			nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
-			hostsList = [(nm[x]['addresses']) for x in nm.all_hosts()]
-			log.debug(hostsList)
+	while True:
+		nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
+		hostsList = [(nm[x]['addresses']) for x in nm.all_hosts()]
+		log.debug(hostsList)
 
-			for device in Device.allDevices:
-				# unpickle
-				device.unpickle()
+		for device in Device.allDevices:
+			# unpickle
+			device.unpickle()
 
-				# visible in network?
-				visible = False
-				for host in hostsList:
-					if 'mac' in host and host['mac'] == device.macAddress:
-						visible = True
-						continue
-				
-				if visible:
-					device.reportVisible()
-				else:
-					device.reportInvisible()
-
-				# pickle
-				device.pickle()
-
-			log.debug(Device.joinStrings(Device.allDevices))
+			# visible in network?
+			visible = False
+			for host in hostsList:
+				if 'mac' in host and host['mac'] == device.macAddress:
+					visible = True
+					continue
 			
-			log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
-			time.sleep(INTERVAL)
-	except:
-		log.info('Shutting down...')
+			if visible:
+				device.reportVisible()
+			else:
+				device.reportInvisible()
+
+			# pickle
+			device.pickle()
+
+		log.debug(Device.joinStrings(Device.allDevices))
+
+		try:
+			os.utime('lastrun', None)
+		except:
+			open('lastrun', 'a').close()
+
+		
+		log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
+		time.sleep(INTERVAL)
