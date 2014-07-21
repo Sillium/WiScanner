@@ -6,6 +6,9 @@ import nmap
 import time
 import pickle
 import configparser
+import glob
+import logging
+import logging.handlers
 from datetime import datetime
 from twython import Twython
 from pushover import Pushover
@@ -128,7 +131,7 @@ class Device:
 			twitter = Twython(TWITTER_APP_KEY, TWITTER_APP_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_TOKEN_SECRET)
 			twitter.update_status(status=text)
 		except:
-			print('Twitter exception!')
+			log.error('Twitter exception!')
 
 	# ======================================================
 	@staticmethod
@@ -140,7 +143,7 @@ class Device:
 			msg.set("title", PUSHOVER_TITLE)
 			po.send(msg)
 		except:
-			print('Pushover exception!')
+			log.error('Pushover exception!')
 
 	# ======================================================
 	@staticmethod
@@ -180,7 +183,7 @@ class Device:
 			pickle.dump(self, device_file)
 			device_file.close()
 		except:
-			print("Pickling for {0} went wrong!".format(self.name))
+			log.error("Pickling for {0} went wrong!".format(self.name))
 
 	# ==========================================================
 	def unpickle(self):
@@ -195,19 +198,21 @@ class Device:
 			if self.inHouse:
 				Device.devicesInHouse.add(self)
 		except:
-			print("No unpickling for {0}.".format(self.name))
+			log.info("No unpickling for {0}.".format(self.name))
 
 # === End Class Device =====================================
 
 # ==========================================================
 if __name__ == '__main__':
+	# get configuration from config file
 	config = configparser.ConfigParser()
 	config.read('config/config.ini')
 
 	LOCATION = config['General']['Location']
 	IP_RANGE = config['General']['IpRange']
 	INTERVAL = int(config['General']['ScanInterval'])
-	DEBUG = config['General'].getboolean('DebugMode')
+	LOG_FILE = config['General']['LogFile']
+	LOG_LEVEL = config['General']['LogLevel']
 
 	TWITTER_APP_KEY = config['Twitter']['AppKey']
 	TWITTER_APP_SECRET = config['Twitter']['AppSecret']
@@ -218,13 +223,29 @@ if __name__ == '__main__':
 	PUSHOVER_USER = config['Pushover']['User']
 	PUSHOVER_TITLE = config['Pushover']['Title']
 
+	# configure logging
+	numericLogLevel = getattr(logging, LOG_LEVEL.upper(), None)
+	if not isinstance(numericLogLevel, int):
+		raise ValueError('Invalid log level: {0}'.format(LOG_LEVEL))
+		
+	logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+	log = logging.getLogger('WiScannerLogger')
+	log.setLevel(numericLogLevel)
+	handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=2000000, backupCount=0)
+	log.addHandler(handler)
+	
+	log.info('Starting up...')
+	
+	# iterate over configured devices in config file
 	for section in config.sections():
 		if (section[:7] == 'Device_'):
 			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']), config[section].getboolean('Twitter'), config[section].getboolean('Pushover'))
+			log.info('Device configured: {0}'.format(newDevice);
 	
 	while True:
 		nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
 		hostsList = [(nm[x]['addresses']) for x in nm.all_hosts()]
+		log.debug(hostsList)
 
 		for device in Device.allDevices:
 			# unpickle
@@ -245,7 +266,9 @@ if __name__ == '__main__':
 			# pickle
 			device.pickle()
 
-		if DEBUG:
-			print('{0}: {1}'.format(datetime.now(), Device.joinStrings(Device.allDevices)))
+		log.info(Device.joinStrings(Device.allDevices))
 		
+		log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
 		time.sleep(INTERVAL)
+	
+	log.info('Shutting down...')
