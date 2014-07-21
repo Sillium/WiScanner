@@ -50,7 +50,7 @@ class Device:
 			message += ' Already here: {0}.'.format(Device.joinDeviceNames(Device.devicesInHouse))
 		else:
 			message += ' No one else is currently here.'.format(self.name)
-		Device.__sendMessage(timePrefix + message)
+		self.__sendMessage(timePrefix + message)
 		Device.devicesInHouse.add(self)
 		self.writeStatusFile()
 
@@ -66,7 +66,7 @@ class Device:
 			message += ' Still here: {0}.'.format(Device.joinDeviceNames(Device.devicesInHouse))
 		else:
 			message += ' No one else was here.'.format(self.name)
-		Device.__sendMessage(timePrefix + message)
+		self.__sendMessage(timePrefix + message)
 		self.writeStatusFile()
 
 	# ======================================================
@@ -130,6 +130,7 @@ class Device:
 		try:
 			twitter = Twython(TWITTER_APP_KEY, TWITTER_APP_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_TOKEN_SECRET)
 			twitter.update_status(status=text)
+			log.debug('Sent message to Twitter.')
 		except:
 			log.error('Twitter exception!')
 
@@ -142,13 +143,14 @@ class Device:
 			msg = po.msg(text)
 			msg.set("title", PUSHOVER_TITLE)
 			po.send(msg)
+			log.debug('Sent message to Pushover.')
 		except:
 			log.error('Pushover exception!')
 
 	# ======================================================
 	@staticmethod
 	def __sendToConsole(text):
-		print(text)
+		log.info(text)
 
 	# ======================================================
 	def __sendMessage(self, text):
@@ -228,10 +230,15 @@ if __name__ == '__main__':
 	if not isinstance(numericLogLevel, int):
 		raise ValueError('Invalid log level: {0}'.format(LOG_LEVEL))
 		
-	logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-	log = logging.getLogger('WiScannerLogger')
+	log = logging.getLogger(__name__)
 	log.setLevel(numericLogLevel)
-	handler = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=2000000, backupCount=0)
+
+	handler = logging.handlers.TimedRotatingFileHandler(LOG_FILE, when="midnight", backupCount=1)
+	handler.setLevel(numericLogLevel)
+
+	formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+	handler.setFormatter(formatter)
+
 	log.addHandler(handler)
 	
 	log.info('Starting up...')
@@ -240,35 +247,36 @@ if __name__ == '__main__':
 	for section in config.sections():
 		if (section[:7] == 'Device_'):
 			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']), config[section].getboolean('Twitter'), config[section].getboolean('Pushover'))
-			log.info('Device configured: {0}'.format(newDevice);
+			log.info('Device configured: {0}'.format(newDevice.name))
 	
-	while True:
-		nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
-		hostsList = [(nm[x]['addresses']) for x in nm.all_hosts()]
-		log.debug(hostsList)
+	try:
+		while True:
+			nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
+			hostsList = [(nm[x]['addresses']) for x in nm.all_hosts()]
+			log.debug(hostsList)
 
-		for device in Device.allDevices:
-			# unpickle
-			device.unpickle()
+			for device in Device.allDevices:
+				# unpickle
+				device.unpickle()
 
-			# visible in network?
-			visible = False
-			for host in hostsList:
-				if 'mac' in host and host['mac'] == device.macAddress:
-					visible = True
-					continue
+				# visible in network?
+				visible = False
+				for host in hostsList:
+					if 'mac' in host and host['mac'] == device.macAddress:
+						visible = True
+						continue
+				
+				if visible:
+					device.reportVisible()
+				else:
+					device.reportInvisible()
+
+				# pickle
+				device.pickle()
+
+			log.debug(Device.joinStrings(Device.allDevices))
 			
-			if visible:
-				device.reportVisible()
-			else:
-				device.reportInvisible()
-
-			# pickle
-			device.pickle()
-
-		log.info(Device.joinStrings(Device.allDevices))
-		
-		log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
-		time.sleep(INTERVAL)
-	
-	log.info('Shutting down...')
+			log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
+			time.sleep(INTERVAL)
+	except:
+		log.info('Shutting down...')
