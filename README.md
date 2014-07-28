@@ -48,6 +48,7 @@ Install Pushover:
     python3 setup.py install
     
 Install dweet.io:
+https://pypi.python.org/pypi/dweepy/0.0.1
 
     sudo su -
     pip-3.2 install dweepy
