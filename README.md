@@ -46,6 +46,13 @@ Install Pushover:
     git clone https://github.com/Wyattjoh/pushover
     cd pushover
     python3 setup.py install
+    
+Install dweet.io:
+
+    sudo su -
+    git clone https://github.com/bliti/pydweet.git
+    cd pydweet
+    pip-3.2 install -r requirements.txt
 
 Running
 =======
