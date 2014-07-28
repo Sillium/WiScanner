@@ -50,9 +50,7 @@ Install Pushover:
 Install dweet.io:
 
     sudo su -
-    git clone https://github.com/bliti/pydweet.git
-    cd pydweet
-    pip-3.2 install -r requirements.txt
+    pip-3.2 install dweepy
 
 Running
 =======
