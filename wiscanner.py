@@ -12,6 +12,7 @@ import logging.handlers
 from datetime import datetime
 from twython import Twython
 from pushover import Pushover
+from Dweet import dweet
 
 # ==========================================================
 try:
@@ -53,6 +54,7 @@ class Device:
 		self.__sendMessage(timePrefix + message)
 		Device.devicesInHouse.add(self)
 		self.writeStatusFile()
+		Device.dweet()
 
 	# ======================================================
 	def __reportLeave(self):
@@ -68,6 +70,7 @@ class Device:
 			message += ' No one else was here.'.format(self.name)
 		self.__sendMessage(timePrefix + message)
 		self.writeStatusFile()
+		Device.dweet()
 
 	# ======================================================
 	def writeStatusFile(self):
@@ -128,10 +131,9 @@ class Device:
 	@staticmethod
 	def __sendToTwitter(text):
 		try:
-			log.info('Sending message to Twitter.')
 			twitter = Twython(TWITTER_APP_KEY, TWITTER_APP_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_TOKEN_SECRET)
 			twitter.update_status(status=text)
-			log.info('Sent message to Twitter.')
+			log.debug('Sent message to Twitter.')
 		except:
 			log.error('Twitter exception!')
 
@@ -139,7 +141,6 @@ class Device:
 	@staticmethod
 	def __sendToPushover(text):
 		try:
-			log.info('Sending message to Pushover.')
 			po = Pushover(PUSHOVER_TOKEN)
 			po.user(PUSHOVER_USER)
 			msg = po.msg(text)
@@ -204,6 +205,14 @@ class Device:
 		except:
 			log.info("No unpickling for {0}.".format(self.name))
 
+	# ======================================================
+	@staticmethod
+	def dweet():
+		if (DWEET_ENABLED):
+			dweet = Dweet()
+			dweetData = {"test": "test"}
+			dweet.dweet_by_name(name = DWEET_THING_NAME, data = dweetData)
+
 # === End Class Device =====================================
 
 # ==========================================================
@@ -226,6 +235,9 @@ if __name__ == '__main__':
 	PUSHOVER_TOKEN = config['Pushover']['Token']
 	PUSHOVER_USER = config['Pushover']['User']
 	PUSHOVER_TITLE = config['Pushover']['Title']
+
+	DWEET_THING_NAME = config['dweet.io']['ThingName']
+	DWEET_ENABLED = config['dweet.io'].getboolean('Enabled')
 
 	# configure logging
 	numericLogLevel = getattr(logging, LOG_LEVEL.upper(), None)
