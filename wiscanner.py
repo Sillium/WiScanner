@@ -12,7 +12,7 @@ import logging.handlers
 from datetime import datetime
 from twython import Twython
 from pushover import Pushover
-from Dweet import dweet
+import dweepy
 
 # ==========================================================
 try:
@@ -209,9 +209,8 @@ class Device:
 	@staticmethod
 	def dweet():
 		if (DWEET_ENABLED):
-			dweet = Dweet()
 			dweetData = {"test": "test"}
-			dweet.dweet_by_name(name = DWEET_THING_NAME, data = dweetData)
+			dweepy.dweet_for(DWEET_THING_NAME, data = dweetData)
 
 # === End Class Device =====================================
 
