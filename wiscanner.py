@@ -12,6 +12,7 @@ import logging.handlers
 from datetime import datetime
 from twython import Twython
 from pushover import Pushover
+from Dweet import dweet
 
 # ==========================================================
 try:
@@ -53,6 +54,7 @@ class Device:
 		self.__sendMessage(timePrefix + message)
 		Device.devicesInHouse.add(self)
 		self.writeStatusFile()
+		Device.dweet()
 
 	# ======================================================
 	def __reportLeave(self):
@@ -68,6 +70,7 @@ class Device:
 			message += ' No one else was here.'.format(self.name)
 		self.__sendMessage(timePrefix + message)
 		self.writeStatusFile()
+		Device.dweet()
 
 	# ======================================================
 	def writeStatusFile(self):
@@ -202,6 +205,14 @@ class Device:
 		except:
 			log.info("No unpickling for {0}.".format(self.name))
 
+	# ======================================================
+	@staticmethod
+	def dweet():
+		if (DWEET_ENABLED):
+			dweet = Dweet()
+			dweetData = {"test": "test"}
+			dweet.dweet_by_name(name = DWEET_THING_NAME, data = dweetData)
+
 # === End Class Device =====================================
 
 # ==========================================================
@@ -224,6 +235,9 @@ if __name__ == '__main__':
 	PUSHOVER_TOKEN = config['Pushover']['Token']
 	PUSHOVER_USER = config['Pushover']['User']
 	PUSHOVER_TITLE = config['Pushover']['Title']
+
+	DWEET_THING_NAME = config['dweet.io']['ThingName']
+	DWEET_ENABLED = config['dweet.io'].getboolean('Enabled')
 
 	# configure logging
 	numericLogLevel = getattr(logging, LOG_LEVEL.upper(), None)
