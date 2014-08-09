@@ -7,6 +7,7 @@ import time
 import pickle
 import configparser
 import glob
+import json
 import logging
 import logging.handlers
 from datetime import datetime
@@ -181,6 +182,10 @@ class Device:
 		inHouse = 'i' if self.inHouse else 'o'
 		return '{0}({1}|{2})'.format(self.name, visible, inHouse)
 
+	# ======================================================
+	def toJson(self):
+		return json.dumps(self, sort_keys=True, indent=4)
+
 	# ==========================================================
 	def pickle(self):
 		try:
@@ -209,8 +214,12 @@ class Device:
 	@staticmethod
 	def dweet():
 		if (DWEET_ENABLED):
-			dweetData = {"test": "test"}
-			dweepy.dweet_for(DWEET_THING_NAME, data = dweetData)
+			dweetData = {}
+
+			for device in Device.allDevices:
+				dweetData[device.name] = device.inHouse
+
+			dweepy.dweet_for(DWEET_THING_NAME, dweetData)
 
 # === End Class Device =====================================
 
