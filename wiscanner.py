@@ -55,7 +55,6 @@ class Device:
 		self.__sendMessage(timePrefix + message)
 		Device.devicesInHouse.add(self)
 		self.writeStatusFile()
-		Device.dweet()
 
 	# ======================================================
 	def __reportLeave(self):
@@ -71,7 +70,6 @@ class Device:
 			message += ' No one else was here.'.format(self.name)
 		self.__sendMessage(timePrefix + message)
 		self.writeStatusFile()
-		Device.dweet()
 
 	# ======================================================
 	def writeStatusFile(self):
@@ -182,10 +180,6 @@ class Device:
 		inHouse = 'i' if self.inHouse else 'o'
 		return '{0}({1}|{2})'.format(self.name, visible, inHouse)
 
-	# ======================================================
-	def toJson(self):
-		return json.dumps(self, sort_keys=True, indent=4)
-
 	# ==========================================================
 	def pickle(self):
 		try:
@@ -217,7 +211,12 @@ class Device:
 			dweetData = {}
 
 			for device in Device.allDevices:
-				dweetData[device.name] = device.inHouse
+				dweetData[device.name] = {}
+				dweetData[device.name]['visible'] = device.visible
+				dweetData[device.name]['inHouse'] = device.inHouse
+				dweetData[device.name]['secondsSinceLastLeave'] = str(device.secondsSinceLastLeave())
+				dweetData[device.name]['secondsSinceLastJoin'] = str(device.secondsSinceLastJoin())
+				dweetData[device.name]['secondsSinceLastVisible'] = str(device.secondsSinceLastVisible())
 
 			dweepy.dweet_for(DWEET_THING_NAME, dweetData)
 
@@ -299,6 +298,8 @@ if __name__ == '__main__':
 		lastRunFile = open('last.run', 'w')
 		lastRunFile.write(Device.joinStrings(Device.allDevices))
 		lastRunFile.close()
+
+		Device.dweet()
 		
 		log.debug('Going to sleep for {0} seconds...'.format(INTERVAL))
 		time.sleep(INTERVAL)
