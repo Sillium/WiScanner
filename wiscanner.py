@@ -210,6 +210,9 @@ class Device:
 		if (DWEET_ENABLED):
 			dweetData = {}
 
+			dweetData['countTotal'] = len(Device.allDevices)
+			dweetData['countInHouse'] = len(Device.devicesInHouse)			
+
 			for device in Device.allDevices:
 				dweetData[device.name] = {}
 				dweetData[device.name]['visible'] = device.visible
