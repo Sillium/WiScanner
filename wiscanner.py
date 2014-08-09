@@ -214,9 +214,9 @@ class Device:
 				dweetData[device.name] = {}
 				dweetData[device.name]['visible'] = device.visible
 				dweetData[device.name]['inHouse'] = device.inHouse
-				dweetData[device.name]['secondsSinceLastLeave'] = str(device.secondsSinceLastLeave())
-				dweetData[device.name]['secondsSinceLastJoin'] = str(device.secondsSinceLastJoin())
-				dweetData[device.name]['secondsSinceLastVisible'] = str(device.secondsSinceLastVisible())
+				dweetData[device.name]['secondsSinceLastLeave'] = round(device.secondsSinceLastLeave(), 0)
+				dweetData[device.name]['secondsSinceLastJoin'] = round(device.secondsSinceLastJoin(), 0)
+				dweetData[device.name]['secondsSinceLastVisible'] = round(device.secondsSinceLastVisible(), 0)
 
 			dweepy.dweet_for(DWEET_THING_NAME, dweetData)
 
