@@ -271,6 +271,29 @@ if __name__ == '__main__':
 		if (section[:7] == 'Device_'):
 			newDevice = Device(config[section]['MacAddress'], section[7:], int(config[section]['Threshold']), config[section].getboolean('Twitter'), config[section].getboolean('Pushover'))
 			log.info('Device configured: {0}'.format(newDevice.name))
+			
+	
+	# send start up message to Pushover and Twitter
+	timePrefix = '{0}: '.format(datetime.now().strftime("%d.%m.%Y %H:%M"))
+	message = 'WiScanner started with configured devices: {0}'.format(Device.joinDeviceNames(Device.allDevices))
+
+	try:
+		po = Pushover(PUSHOVER_TOKEN)
+		po.user(PUSHOVER_USER)
+		msg = po.msg(timePrefix + message)
+		msg.set("title", PUSHOVER_TITLE)
+		po.send(msg)
+		log.debug('Sent message to Pushover.')
+	except:
+		log.error('Pushover exception!')
+		
+	try:
+		twitter = Twython(TWITTER_APP_KEY, TWITTER_APP_SECRET, TWITTER_OAUTH_TOKEN, TWITTER_OAUTH_TOKEN_SECRET)
+		twitter.update_status(status=message)
+		log.debug('Sent message to Twitter.')
+	except:
+		log.error('Twitter exception!')
+		
 	
 	while True:
 		nm.scan(hosts= IP_RANGE + '/24', arguments='-n -sP -PE -T5')
